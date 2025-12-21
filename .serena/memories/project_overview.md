@@ -1,0 +1,13 @@
+# receipt_tui プロジェクト概要
+- 目的: レシート関連のTUIアプリ。Google OAuth/Drive/Sheets 連携を行う。
+- 技術: Rust 2024 edition、TUI、Google API (OAuth/Drive/Sheets)。
+- 構成:
+  - `src/` アプリ本体
+    - `app.rs` TUIフロー
+    - `ui.rs` 端末セットアップ
+    - `worker.rs` Google API ジョブ
+    - `google/` OAuth/Drive/Sheets クライアント
+    - `config.rs` 設定の読み書き
+    - `jobs.rs` ジョブモデル
+  - `config.toml` は実行時生成 (ユーザー/Google ID を保存)
+  - `credentials.json`/`token.json` はローカルのみ (gitignore)
