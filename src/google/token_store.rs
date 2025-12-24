@@ -25,7 +25,7 @@ impl FileTokenStorage {
 
     /// Stable hash of the scope list (order-insensitive).
     fn scopes_key(scopes: &[&str]) -> String {
-        let mut v: Vec<&str> = scopes.iter().copied().collect();
+        let mut v: Vec<&str> = scopes.to_vec();
         v.sort_unstable();
         v.dedup();
         let joined = v.join(" ");
@@ -55,12 +55,12 @@ impl FileTokenStorage {
 
     /// Persist the token map to disk, creating directories if needed.
     async fn save_map(&self, map: &HashMap<String, TokenInfo>) -> Result<(), TokenStorageError> {
-        if let Some(parent) = self.path.parent() {
-            if !parent.as_os_str().is_empty() {
-                fs::create_dir_all(parent)
-                    .await
-                    .map_err(|e| TokenStorageError::Other(e.to_string().into()))?;
-            }
+        if let Some(parent) = self.path.parent()
+            && !parent.as_os_str().is_empty()
+        {
+            fs::create_dir_all(parent)
+                .await
+                .map_err(|e| TokenStorageError::Other(e.to_string().into()))?;
         }
         let data = serde_json::to_vec_pretty(map)
             .map_err(|e| TokenStorageError::Other(e.to_string().into()))?;

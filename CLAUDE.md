@@ -37,6 +37,9 @@ cargo test            # Run all tests (when tests are added)
 - **`app.rs`**: メインイベントループとTUI状態管理。`App`構造体がアプリケーション状態を保持し、キーボード入力を処理してワーカーにコマンドを送信
 - **`ui.rs`**: ターミナル初期化/復元のユーティリティ
 - **`events.rs`**: UI状態定義（`Screen`列挙型、`UiState`構造体）
+- **`input.rs`**: TUI内での文字列入力コンポーネント（InputBox）。raw modeを維持したまま、ポップアップ形式で入力を受け付ける
+- **`layout.rs`**: レイアウト計算のヘルパー関数。4ペイン（Jobs Table + INFO Panel + HELP + STATUS）のレイアウトを管理
+- **`wizard.rs`**: 初期設定ウィザードのステート管理。7つのステップでユーザーをガイド
 - **`worker.rs`**: バックグラウンドワーカースレッド。`WorkerCmd`を受信し、Google APIを呼び出して`WorkerEvent`をUIに送信
 - **`jobs.rs`**: ジョブモデル（`Job`、`JobStatus`、`ReceiptFields`）
 - **`config.rs`**: `config.toml`の読み込み/保存。Google Folder/Sheet ID、ユーザー名、テンプレート設定などを管理
@@ -50,6 +53,8 @@ cargo test            # Run all tests (when tests are added)
 ```
 User Input (app.rs)
     ↓
+InputBox (input.rs) or Direct Key Handler
+    ↓
 WorkerCmd via mpsc::Sender
     ↓
 Worker (worker.rs) → Google APIs (google/)
@@ -57,14 +62,21 @@ Worker (worker.rs) → Google APIs (google/)
 WorkerEvent via mpsc::Sender
     ↓
 App updates (app.rs) → UI redraw (ratatui)
+    ↓
+4-pane layout (layout.rs) + InputBox overlay (input.rs)
 ```
 
 ### Key Patterns
 
 1. **Channel-based concurrency**: UIスレッドとワーカースレッドは直接状態を共有せず、チャネル経由でメッセージをやり取り
-2. **State machine UI**: `Screen`列挙型（Main/Settings/EditJob）で画面遷移を管理
-3. **Job lifecycle**: `JobStatus`がQueued → WaitingUserFix → WritingSheet → ExportingPdf → UploadingPdf → Doneと遷移
-4. **Config persistence**: `Config`構造体はTOML形式で`config.toml`に永続化され、ワーカーに`SaveSettings`コマンドで渡される
+2. **State machine UI**: `Screen`列挙型（Main/Settings/EditJob/InitialSetup）で画面遷移を管理
+3. **InputBox component**: raw modeを維持したまま、TUI内でポップアップ形式の入力を実現。ESCでキャンセル、Enterで確定
+4. **Initial setup wizard**: 初回起動時に7ステップのウィザードでユーザーをガイド（Welcome → CheckAuth → InputFolderId → OutputFolderId → TemplateSheetId → UserName → Complete）
+5. **Job lifecycle**: `JobStatus`がQueued → WaitingUserFix → WritingSheet → ExportingPdf → UploadingPdf → Doneと遷移
+6. **Config persistence**: `Config`構造体はTOML形式で`config.toml`に永続化され、ワーカーに`SaveSettings`コマンドで渡される
+7. **Settings buffer management**: Settings画面でESC時にバッファをリセットし、前回の編集値を破棄
+8. **4-pane layout**: Jobs Table (70%) + INFO Panel (30%) + HELP Bar + STATUS Bar の4ペイン構成
+9. **Auto-generated target month**: `edit_target_month`は起動時に現在の年月で自動生成（ハードコーディングなし）
 
 ### Google Sheets Integration Details
 
@@ -112,4 +124,13 @@ note_col = "F"            # Column for note
 - `credentials.json`、`token.json`、`config.toml`はローカルのみに保持（`.gitignore`に含まれている）
 - OAuth認証スコープ: `https://www.googleapis.com/auth/drive`、`https://www.googleapis.com/auth/spreadsheets`
 - TUIは50msポーリングでキーボードイベントをチェックし、ワーカーイベントを`try_recv`で非ブロッキング処理
-- `prompt`関数はraw modeを一時的に無効化してユーザー入力を取得（Settings/EditJob画面で使用）
+- **InputBox**: raw modeを維持したまま、TUI内で文字列入力を実現。`input.rs`モジュールで実装
+  - サポートされるキー操作: Enter（確定）、ESC（キャンセル）、Backspace、Delete、Left/Right、Home/End、Ctrl+U（行クリア）
+  - 横スクロール対応（長いフォルダIDやシートIDの入力に対応）
+  - カーソル位置を`|`文字で視覚的に表現
+- **初期起動ウィザード**: `config.toml`が空または必須項目が未設定の場合、InitialSetup画面から起動
+  - credentials.json の存在確認 → フォルダID・シートID・ユーザー名の入力 → 設定保存
+  - ESCでステップをスキップ可能
+  - 必須項目が空の場合、完了ステップでバリデーションエラー
+- **HELP/STATUSバー**: 各画面で利用可能なキーバインディングをHELPバーに表示。STATUSバーには画面名、ジョブ情報、エラーを表示
+- **Settings画面のバッファ管理**: ESC時にバッファをリセットし、保存済みのconfig値を再ロード（前回の編集値を破棄）

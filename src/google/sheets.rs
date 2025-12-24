@@ -41,7 +41,7 @@ pub async fn get_first_sheet_title_and_rows(
     let resp = ensure_success(resp).await?;
     let ss = resp.json::<Spreadsheet>().await?;
 
-    let s0 = ss.sheets.get(0).ok_or_else(|| anyhow!("no sheets"))?;
+    let s0 = ss.sheets.first().ok_or_else(|| anyhow!("no sheets"))?;
     let title = s0.properties.title.clone();
     let rows = s0
         .properties
@@ -81,7 +81,7 @@ pub async fn count_existing_rows_in_col(
 
     let mut n = 0u32;
     for row in resp.values {
-        let v = row.get(0).map(|s| s.trim()).unwrap_or("");
+        let v = row.first().map(|s| s.trim()).unwrap_or("");
         // Stop at the first empty cell to find the next insertion point.
         if v.is_empty() {
             break;

@@ -7,8 +7,11 @@ mod app;
 mod config;
 mod events;
 mod google;
+mod input;
 mod jobs;
+mod layout;
 mod ui;
+mod wizard;
 mod worker;
 
 /// Initialize file logging and keep the non-blocking guard alive.
