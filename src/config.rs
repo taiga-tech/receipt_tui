@@ -99,7 +99,7 @@ impl Default for Config {
                 target_month_cell: "B3".into(),
             },
             general_expense: GeneralExpenseCfg {
-                start_row: 44,
+                start_row: 7,
                 date_col: "B".into(),
                 reason_col: "C".into(),
                 amount_col: "D".into(),
