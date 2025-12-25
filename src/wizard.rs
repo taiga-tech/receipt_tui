@@ -54,10 +54,10 @@ impl WizardState {
     pub fn get_prompt(&self) -> String {
         match self.current_step {
             WizardStep::Welcome => {
-                "receipt_tuiへようこそ！\n\nこのウィザードでは、アプリケーションの初期設定を行います。\nEnterキーを押して開始してください。".to_string()
+                "receipt_tuiへようこそ！\n\nこのウィザードでは、アプリケーションの初期設定を行います。\nEnterキーを押して開始してください。\n\n(ESCまたはCtrl+Cでいつでも終了できます)".to_string()
             }
             WizardStep::CheckAuth => {
-                "Google OAuth認証の確認中...\n\ncredentials.json が必要です。\nEnterキーで次へ進みます。".to_string()
+                "Google OAuth認証\n\nassets/credentials.json が必要です。\nEnterキーを押すと、ブラウザで認証画面が開きます。\n認証が完了すると自動的に次のステップに進みます。".to_string()
             }
             WizardStep::InputFolderId => {
                 "入力フォルダIDの設定\n\n領収書画像が保存されているGoogle DriveフォルダのIDを入力してください。\nEnterキーで入力画面を開きます。".to_string()

@@ -12,6 +12,8 @@ use tokio::sync::mpsc;
 /// Commands sent from the UI to the worker.
 #[derive(Debug)]
 pub enum WorkerCmd {
+    /// Initialize OAuth authentication.
+    CheckAuth,
     /// Re-scan Drive for input images.
     RefreshJobs,
     /// Persist and apply updated settings.
@@ -27,6 +29,10 @@ pub enum WorkerCmd {
 /// Events emitted by the worker for UI updates.
 #[derive(Clone, Debug)]
 pub enum WorkerEvent {
+    /// OAuth authentication succeeded.
+    AuthSuccess,
+    /// OAuth authentication failed.
+    AuthFailed(String),
     /// Full job list loaded from Drive.
     JobsLoaded(Vec<Job>),
     /// Single job status update.
@@ -50,22 +56,27 @@ pub async fn run(
     let http = Client::new();
     tracing::info!("worker started");
 
-    // OAuth setup is done once; failures are terminal.
-    let authn = match auth::authenticator().await {
-        Ok(a) => a,
-        Err(e) => {
-            tracing::error!("OAuth init failed: {e}");
-            let _ = tx
-                .send(WorkerEvent::Error(format!("OAuth init failed: {e}")))
-                .await;
-            return;
-        }
-    };
-    tracing::info!("OAuth authenticator ready");
+    // OAuth authenticator is initialized on demand (via CheckAuth command).
+    let mut authn: Option<auth::InstalledAuth> = None;
 
     // Process commands one at a time to keep state consistent.
     while let Some(cmd) = rx.recv().await {
         match cmd {
+            WorkerCmd::CheckAuth => {
+                tracing::info!("checking OAuth authentication");
+                match auth::authenticator().await {
+                    Ok(a) => {
+                        tracing::info!("OAuth authenticator ready");
+                        authn = Some(a);
+                        let _ = tx.send(WorkerEvent::AuthSuccess).await;
+                    }
+                    Err(e) => {
+                        tracing::error!("OAuth init failed: {e}");
+                        let _ = tx.send(WorkerEvent::AuthFailed(format!("{e}"))).await;
+                    }
+                }
+            }
+
             WorkerCmd::SaveSettings(new_cfg) => {
                 tracing::info!("settings updated");
                 cfg = new_cfg;
@@ -83,7 +94,17 @@ pub async fn run(
                     continue;
                 }
 
-                match access_token(&authn).await {
+                let Some(ref auth) = authn else {
+                    tracing::warn!("refresh aborted: authentication not completed");
+                    let _ = tx
+                        .send(WorkerEvent::Error(
+                            "Please complete authentication first".into(),
+                        ))
+                        .await;
+                    continue;
+                };
+
+                match access_token(auth).await {
                     Ok(token) => {
                         tracing::info!("access token acquired");
                         // List image files and map them into editable jobs.
@@ -130,6 +151,18 @@ pub async fn run(
                 target_month_ym,
             } => {
                 tracing::info!("commit job start: {job_id}");
+
+                let Some(ref auth) = authn else {
+                    tracing::warn!("commit aborted: authentication not completed");
+                    let _ = tx
+                        .send(WorkerEvent::JobUpdated {
+                            job_id,
+                            status: JobStatus::Error("Authentication not completed".into()),
+                        })
+                        .await;
+                    continue;
+                };
+
                 // Update status so the UI shows progress immediately.
                 let _ = tx
                     .send(WorkerEvent::JobUpdated {
@@ -138,8 +171,7 @@ pub async fn run(
                     })
                     .await;
 
-                let r =
-                    commit_one(&http, &authn, &cfg, &fields, &target_month_ym, &tx, job_id).await;
+                let r = commit_one(&http, auth, &cfg, &fields, &target_month_ym, &tx, job_id).await;
                 match r {
                     Ok(_) => {
                         tracing::info!("commit job done: {job_id}");
