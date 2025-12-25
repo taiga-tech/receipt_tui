@@ -130,6 +130,20 @@ pub async fn run_app(terminal: &mut Tui) -> Result<()> {
 /// Apply a worker event to the UI state.
 fn handle_worker_event(app: &mut App, ev: WorkerEvent) -> Result<()> {
     match ev {
+        WorkerEvent::AuthSuccess => {
+            app.ui.error = None;
+            app.ui.status = "Authentication successful".into();
+            // If in wizard CheckAuth step, move to next step
+            if app.ui.screen == Screen::InitialSetup
+                && app.wizard_state.current_step == wizard::WizardStep::CheckAuth
+            {
+                app.wizard_state.next_step();
+            }
+        }
+        WorkerEvent::AuthFailed(e) => {
+            app.ui.error = Some(format!("Authentication failed: {}", e));
+            app.ui.status = format!("Auth failed: {e}");
+        }
         WorkerEvent::JobsLoaded(jobs) => {
             app.jobs = jobs;
             app.ui.selected = 0;
@@ -328,7 +342,19 @@ async fn handle_edit_job_key(app: &mut App, k: KeyEvent) -> Result<bool> {
 
 /// Handle keys for InitialSetup (wizard) screen
 async fn handle_wizard_key(app: &mut App, k: KeyEvent) -> Result<bool> {
+    // Allow Ctrl+C to quit
+    if k.modifiers
+        .contains(crossterm::event::KeyModifiers::CONTROL)
+        && k.code == KeyCode::Char('c')
+    {
+        return Ok(true);
+    }
+
     match k.code {
+        KeyCode::Esc => {
+            // Allow ESC to exit wizard
+            return Ok(true);
+        }
         KeyCode::Enter => {
             use wizard::WizardStep;
             match &app.wizard_state.current_step {
@@ -341,7 +367,9 @@ async fn handle_wizard_key(app: &mut App, k: KeyEvent) -> Result<bool> {
                             Some("assets/credentials.json not found. Please add it.".into());
                     } else {
                         app.ui.error = None;
-                        app.wizard_state.next_step();
+                        app.ui.status = "Authenticating... (please check your browser)".into();
+                        // Send CheckAuth command to worker
+                        app.worker_tx.send(WorkerCmd::CheckAuth).await?;
                     }
                 }
                 WizardStep::InputFolderId => {
@@ -403,10 +431,6 @@ async fn handle_wizard_key(app: &mut App, k: KeyEvent) -> Result<bool> {
                     request_refresh(app).await?;
                 }
             }
-        }
-        KeyCode::Esc => {
-            // Skip current step
-            app.wizard_state.next_step();
         }
         _ => {}
     }
@@ -708,7 +732,7 @@ fn draw_wizard_screen(f: &mut Frame, app: &App) {
     let prompt = app.wizard_state.get_prompt();
 
     let content_text = format!(
-        "=== Initial Setup Wizard ===\n\nStep {}/{}\n\n{}\n\nPress Enter to proceed, ESC to skip step.",
+        "=== Initial Setup Wizard ===\n\nStep {}/{}\n\n{}",
         step_num, total_steps, prompt
     );
 
@@ -746,6 +770,6 @@ fn get_help_text(screen: &Screen) -> String {
         Screen::EditJob => {
             "e=edit field | Tab=next field | m=month | Enter=commit | ESC=cancel".into()
         }
-        Screen::InitialSetup => "Follow wizard steps | Enter=proceed | ESC=skip step".into(),
+        Screen::InitialSetup => "Enter=proceed | ESC=exit wizard | Ctrl+C=quit".into(),
     }
 }

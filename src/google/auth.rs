@@ -38,9 +38,10 @@ impl InstalledFlowDelegate for InstalledFlowBrowserDelegate {
 
 /// Build an installed-flow authenticator with file-backed token storage.
 pub async fn authenticator() -> Result<InstalledAuth> {
-    // OAuth client secret is embedded for the local app.
-    const CREDS: &str = include_str!("../../assets/credentials.json");
-    let secret = yup_oauth2::parse_application_secret(CREDS.as_bytes())?;
+    // Read OAuth client secret from file at runtime.
+    let creds_path = "assets/credentials.json";
+    let creds = std::fs::read_to_string(creds_path)?;
+    let secret = yup_oauth2::parse_application_secret(creds.as_bytes())?;
 
     let storage = FileTokenStorage::new("token.json");
 
