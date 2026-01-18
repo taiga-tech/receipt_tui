@@ -738,14 +738,14 @@ fn draw_wizard_screen(f: &mut Frame, app: &App) {
 /// Get help text for the current screen
 fn get_help_text(screen: &Screen) -> String {
     match screen {
-        Screen::Main => "q=quit | r=refresh | t=settings | Enter=edit | ↑↓=navigate".into(),
+        Screen::Main => "q: quit | r: refresh | t: settings | Enter: edit | ↑↓: navigate".into(),
         Screen::Settings => {
-            "i=input folder | o=output folder | p=template | n=name | Enter=save | ESC=cancel"
+            "i: input folder | o: output folder | p: template | n: name | Enter: save | ESC: cancel"
                 .into()
         }
         Screen::EditJob => {
-            "e=edit field | Tab=next field | m=month | Enter=commit | ESC=cancel".into()
+            "e: edit field | Tab: next field | m: month | Enter: commit | ESC: cancel".into()
         }
-        Screen::InitialSetup => "Follow wizard steps | Enter=proceed | ESC=skip step".into(),
+        Screen::InitialSetup => "Follow wizard steps | Enter: proceed | ESC: skip step".into(),
     }
 }
