@@ -1,10 +1,10 @@
-//! Google API client helpers.
+//! Google APIクライアントのヘルパー群。
 
-/// OAuth and scope helpers.
+/// OAuthとスコープ周りのヘルパー。
 pub mod auth;
-/// Drive API wrappers.
+/// Drive APIのラッパー。
 pub mod drive;
-/// Sheets API wrappers.
+/// Sheets APIのラッパー。
 pub mod sheets;
-/// Token persistence for OAuth.
+/// OAuthトークンの保存処理。
 pub mod token_store;

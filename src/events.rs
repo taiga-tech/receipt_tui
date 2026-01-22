@@ -1,31 +1,31 @@
-//! UI state and screen enums for navigation.
+//! 画面遷移用のUI状態と画面種別。
 
-/// Active screen in the TUI.
+/// TUIで現在表示中の画面。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Screen {
-    /// Main jobs list.
+    /// メインのジョブ一覧画面。
     Main,
-    /// Settings editor.
+    /// 設定編集画面。
     Settings,
-    /// Edit selected job fields.
+    /// 選択ジョブの編集画面。
     EditJob,
-    /// Initial setup wizard.
+    /// 初期設定ウィザード画面。
     InitialSetup,
 }
 
-/// UI state shared with the renderer.
+/// 描画側と共有するUI状態。
 #[derive(Clone, Debug)]
 pub struct UiState {
-    /// Currently active screen.
+    /// 現在の画面。
     pub screen: Screen,
-    /// Selected row in the jobs table.
+    /// ジョブ一覧の選択行。
     pub selected: usize,
-    /// Rolling log shown in the right panel.
+    /// 右側パネルに表示するログ。
     pub log: Vec<String>,
-    /// Status line shown at the bottom.
+    /// 画面下部のステータス文言。
     pub status: String,
-    /// Which field is targeted when editing a job (0..4).
-    pub editing_field_idx: usize, // 0..4
-    /// Error message (separate from status for highlighting).
+    /// 編集対象のフィールド位置（0..4）。
+    pub editing_field_idx: usize, // 0..4 の範囲
+    /// エラーメッセージ（強調表示用）。
     pub error: Option<String>,
 }

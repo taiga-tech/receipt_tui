@@ -1,11 +1,11 @@
-//! Shortcut key configuration management.
+//! ショートカット設定の管理。
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-/// Complete shortcut configuration
+/// ショートカット設定の全体。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Shortcuts {
     pub main: MainShortcuts,
@@ -15,7 +15,7 @@ pub struct Shortcuts {
     pub input_box: InputBoxShortcuts,
 }
 
-/// Main screen shortcuts
+/// メイン画面のショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MainShortcuts {
     pub quit: String,
@@ -26,7 +26,7 @@ pub struct MainShortcuts {
     pub up: String,
 }
 
-/// Settings screen shortcuts
+/// 設定画面のショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SettingsShortcuts {
     pub cancel: String,
@@ -37,7 +37,7 @@ pub struct SettingsShortcuts {
     pub name: String,
 }
 
-/// EditJob screen shortcuts
+/// 編集画面のショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EditJobShortcuts {
     pub cancel: String,
@@ -47,14 +47,14 @@ pub struct EditJobShortcuts {
     pub edit_field: String,
 }
 
-/// Wizard screen shortcuts
+/// ウィザード画面のショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WizardShortcuts {
     pub proceed: String,
     pub skip: String,
 }
 
-/// InputBox shortcuts
+/// InputBoxのショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputBoxShortcuts {
     pub confirm: String,
@@ -69,22 +69,26 @@ pub struct InputBoxShortcuts {
 }
 
 impl Shortcuts {
-    /// Load shortcuts from TOML file, or use defaults if file doesn't exist.
+    /// TOMLから読み込み、無ければデフォルトを返す。
     pub fn load_or_default<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
         if path.exists() {
+            // 既存ファイルを読み込んでパースする。
             let content = std::fs::read_to_string(path)?;
             let shortcuts: Shortcuts = toml::from_str(&content)?;
             Ok(shortcuts)
         } else {
+            // 未作成の場合は既定値を利用する。
             Ok(Self::default())
         }
     }
 
-    /// Save shortcuts to TOML file.
+    /// TOMLとして保存する。
     #[allow(dead_code)]
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        // 文字列にシリアライズする。
         let content = toml::to_string_pretty(self)?;
+        // ファイルへ書き込む。
         std::fs::write(path, content)?;
         Ok(())
     }
@@ -135,20 +139,20 @@ impl Default for Shortcuts {
     }
 }
 
-/// Check if a KeyEvent matches a shortcut string.
+/// KeyEventがショートカット文字列と一致するか判定する。
 pub fn matches_shortcut(key: &KeyEvent, shortcut: &str) -> bool {
-    // Parse shortcut string (e.g., "Ctrl+u", "a", "Enter")
+    // ショートカット文字列を分解する（例: "Ctrl+u", "a", "Enter"）。
     let parts: Vec<&str> = shortcut.split('+').collect();
 
     let (modifiers_str, key_str) = if parts.len() > 1 {
-        // Has modifier (e.g., "Ctrl+u")
+        // 修飾キー付きの形式（例: "Ctrl+u"）。
         (&parts[0..parts.len() - 1], parts[parts.len() - 1])
     } else {
-        // No modifier (e.g., "a", "Enter")
+        // 修飾キーなしの形式（例: "a", "Enter"）。
         (&[][..], parts[0])
     };
 
-    // Parse modifiers
+    // 修飾キーを解析して期待値を作る。
     let mut expected_modifiers = KeyModifiers::empty();
     for modifier in modifiers_str {
         match *modifier {
@@ -159,12 +163,12 @@ pub fn matches_shortcut(key: &KeyEvent, shortcut: &str) -> bool {
         }
     }
 
-    // Check modifiers match
+    // 修飾キーが一致しなければ即座に不一致とする。
     if key.modifiers != expected_modifiers {
         return false;
     }
 
-    // Parse key code
+    // キーコードの種別ごとに一致判定を行う。
     match key_str {
         "Enter" | "enter" => key.code == KeyCode::Enter,
         "Esc" | "esc" => key.code == KeyCode::Esc,
@@ -177,7 +181,7 @@ pub fn matches_shortcut(key: &KeyEvent, shortcut: &str) -> bool {
         "Right" | "right" => key.code == KeyCode::Right,
         "Home" | "home" => key.code == KeyCode::Home,
         "End" | "end" => key.code == KeyCode::End,
-        // Single character
+        // 単一文字は Char として比較する。
         s if s.len() == 1 => {
             if let Some(c) = s.chars().next() {
                 key.code == KeyCode::Char(c)
@@ -195,6 +199,7 @@ mod tests {
 
     #[test]
     fn test_matches_shortcut_simple_char() {
+        // 単一文字の一致判定を検証する。
         let key = KeyEvent::new(KeyCode::Char('q'), KeyModifiers::empty());
         assert!(matches_shortcut(&key, "q"));
         assert!(!matches_shortcut(&key, "w"));
@@ -202,6 +207,7 @@ mod tests {
 
     #[test]
     fn test_matches_shortcut_special_key() {
+        // 特殊キーの一致判定を検証する。
         let key = KeyEvent::new(KeyCode::Enter, KeyModifiers::empty());
         assert!(matches_shortcut(&key, "Enter"));
         assert!(!matches_shortcut(&key, "Esc"));
@@ -209,6 +215,7 @@ mod tests {
 
     #[test]
     fn test_matches_shortcut_with_modifier() {
+        // 修飾キー付きの一致判定を検証する。
         let key = KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL);
         assert!(matches_shortcut(&key, "Ctrl+u"));
         assert!(!matches_shortcut(&key, "u"));
@@ -216,6 +223,7 @@ mod tests {
 
     #[test]
     fn test_matches_shortcut_arrow_keys() {
+        // 矢印キーの一致判定を検証する。
         let key = KeyEvent::new(KeyCode::Up, KeyModifiers::empty());
         assert!(matches_shortcut(&key, "Up"));
         assert!(!matches_shortcut(&key, "Down"));

@@ -1,4 +1,4 @@
-//! 初期設定ウィザードのステート管理
+//! 初期設定ウィザードのステート管理。
 
 /// ウィザードの各ステップ
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -31,6 +31,7 @@ pub struct WizardState {
 impl WizardState {
     /// 新しいウィザード状態を作成
     pub fn new() -> Self {
+        // 最初はWelcomeステップから開始する。
         Self {
             current_step: WizardStep::Welcome,
             total_steps: 7,
@@ -39,6 +40,7 @@ impl WizardState {
 
     /// 次のステップへ進む
     pub fn next_step(&mut self) {
+        // 現在のステップに応じて次のステップを決定する。
         self.current_step = match self.current_step {
             WizardStep::Welcome => WizardStep::CheckAuth,
             WizardStep::CheckAuth => WizardStep::InputFolderId,
@@ -52,6 +54,7 @@ impl WizardState {
 
     /// 現在のステップのプロンプトメッセージを取得
     pub fn get_prompt(&self) -> String {
+        // ステップごとの説明文を返す。
         match self.current_step {
             WizardStep::Welcome => {
                 "receipt_tuiへようこそ！\n\nこのウィザードでは、アプリケーションの初期設定を行います。\nEnterキーを押して開始してください。".to_string()
@@ -79,6 +82,7 @@ impl WizardState {
 
     /// 現在のステップ番号を取得（1始まり）
     pub fn get_step_number(&self) -> usize {
+        // ステップを番号へ対応付ける。
         match self.current_step {
             WizardStep::Welcome => 1,
             WizardStep::CheckAuth => 2,

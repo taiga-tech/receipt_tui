@@ -1,23 +1,23 @@
-//! Google Drive API helpers.
+//! Google Drive APIのヘルパー。
 
 use anyhow::{Result, anyhow};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-/// List response for Drive files.
+/// Driveファイル一覧のレスポンス。
 #[derive(Debug, Deserialize)]
 pub struct FileListResp {
     pub files: Vec<DriveFile>,
 }
 
-/// Minimal Drive file metadata needed by the app.
+/// アプリが必要とする最小限のDriveファイル情報。
 #[derive(Debug, Deserialize)]
 pub struct DriveFile {
     pub id: String,
     pub name: String,
 }
 
-/// Metadata used to resolve shortcuts into real files.
+/// ショートカット解決に使うメタデータ。
 #[derive(Debug, Deserialize)]
 struct FileMeta {
     #[serde(rename = "mimeType")]
@@ -26,7 +26,7 @@ struct FileMeta {
     shortcut_details: Option<ShortcutDetails>,
 }
 
-/// Shortcut details returned by Drive API.
+/// Drive APIから返るショートカット詳細。
 #[derive(Debug, Deserialize)]
 struct ShortcutDetails {
     #[serde(rename = "targetId")]
@@ -35,22 +35,24 @@ struct ShortcutDetails {
     target_mime_type: String,
 }
 
-/// List image files in a Drive folder.
+/// 指定フォルダ内の画像ファイルを一覧取得する。
 pub async fn list_images_in_folder(
     http: &Client,
     token: &str,
     folder_id: &str,
 ) -> Result<Vec<DriveFile>> {
-    // Query for non-trashed images in the given parent.
+    // 対象フォルダ配下の画像（ゴミ箱除外）を検索する。
     let q = format!(
         "'{}' in parents and trashed=false and mimeType contains 'image/'",
         folder_id
     );
+    // Drive APIのクエリURLを組み立てる。
     let url = format!(
         "https://www.googleapis.com/drive/v3/files?q={}&fields=files(id,name)",
         urlencoding::encode(&q)
     );
 
+    // HTTPリクエストを送信し、レスポンスを解析する。
     let resp = http
         .get(url)
         .bearer_auth(token)
@@ -63,15 +65,17 @@ pub async fn list_images_in_folder(
     Ok(resp.files)
 }
 
-/// Resolve a template id that may be a shortcut into a real sheet id.
+/// テンプレートIDがショートカットの場合、実体のシートIDへ解決する。
 pub async fn resolve_sheet_id(http: &Client, token: &str, file_id: &str) -> Result<String> {
     const SHEET_MIME: &str = "application/vnd.google-apps.spreadsheet";
     const SHORTCUT_MIME: &str = "application/vnd.google-apps.shortcut";
 
+    // メタデータ取得用のURLを組み立てる。
     let url = format!(
         "https://www.googleapis.com/drive/v3/files/{}?fields=mimeType,shortcutDetails(targetId,targetMimeType)",
         file_id
     );
+    // メタデータを取得してJSONへパースする。
     let meta = http
         .get(url)
         .bearer_auth(token)
@@ -81,12 +85,15 @@ pub async fn resolve_sheet_id(http: &Client, token: &str, file_id: &str) -> Resu
         .json::<FileMeta>()
         .await?;
 
+    // MIMEタイプに応じてIDを返す。
     match meta.mime_type.as_str() {
         SHEET_MIME => Ok(file_id.to_string()),
         SHORTCUT_MIME => {
+            // ショートカットのターゲット情報を取り出す。
             let details = meta
                 .shortcut_details
                 .ok_or_else(|| anyhow!("shortcutDetails missing for template_sheet_id"))?;
+            // ターゲットがシートならそのIDを返す。
             if details.target_mime_type == SHEET_MIME {
                 Ok(details.target_id)
             } else {
@@ -103,7 +110,7 @@ pub async fn resolve_sheet_id(http: &Client, token: &str, file_id: &str) -> Resu
     }
 }
 
-/// Drive copy request body.
+/// DriveコピーAPIのリクエストボディ。
 #[derive(Debug, Serialize)]
 struct CopyReq<'a> {
     name: &'a str,
@@ -111,7 +118,7 @@ struct CopyReq<'a> {
     parents: Option<Vec<&'a str>>,
 }
 
-/// Copy a Drive file and return the new file id.
+/// Driveファイルをコピーし、新しいファイルIDを返す。
 pub async fn copy_file(
     http: &Client,
     token: &str,
@@ -119,14 +126,17 @@ pub async fn copy_file(
     new_name: &str,
     parent_folder_id: Option<&str>,
 ) -> Result<String> {
+    // コピーAPIのURLを組み立てる。
     let url = format!(
         "https://www.googleapis.com/drive/v3/files/{}/copy?fields=id",
         file_id
     );
+    // リクエストボディを作成する。
     let body = CopyReq {
         name: new_name,
         parents: parent_folder_id.map(|p| vec![p]),
     };
+    // HTTPリクエストを実行してIDを取得する。
     let v = http
         .post(url)
         .bearer_auth(token)
@@ -142,13 +152,15 @@ pub async fn copy_file(
         .to_string())
 }
 
-/// Export a spreadsheet to PDF.
+/// スプレッドシートをPDFとしてエクスポートする。
 pub async fn export_pdf(http: &Client, token: &str, sheet_file_id: &str) -> Result<Vec<u8>> {
+    // エクスポート用URLを作る。
     let url = format!(
         "https://www.googleapis.com/drive/v3/files/{}/export?mimeType=application/pdf",
         sheet_file_id
     );
 
+    // PDFのバイナリを取得する。
     let bytes = http
         .get(url)
         .bearer_auth(token)
@@ -160,7 +172,7 @@ pub async fn export_pdf(http: &Client, token: &str, sheet_file_id: &str) -> Resu
     Ok(bytes.to_vec())
 }
 
-/// Upload a PDF into a Drive folder and return its file id.
+/// PDFをDriveへアップロードし、ファイルIDを返す。
 pub async fn upload_pdf(
     http: &Client,
     token: &str,
@@ -168,12 +180,14 @@ pub async fn upload_pdf(
     filename: &str,
     pdf_bytes: Vec<u8>,
 ) -> Result<String> {
+    // メタデータ（ファイル名・親フォルダ・MIME）を用意する。
     let meta = serde_json::json!({
         "name": filename,
         "parents": [parent_folder_id],
         "mimeType": "application/pdf"
     });
 
+    // マルチパートフォーム（メタデータ＋ファイル本体）を構築する。
     let form = reqwest::multipart::Form::new()
         .part(
             "metadata",
@@ -187,6 +201,7 @@ pub async fn upload_pdf(
                 .mime_str("application/pdf")?,
         );
 
+    // アップロードAPIを実行してIDを取得する。
     let url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id";
     let v = http
         .post(url)

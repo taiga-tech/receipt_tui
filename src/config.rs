@@ -1,103 +1,111 @@
-//! Config model and persistence helpers.
+//! 設定モデルと永続化ヘルパー。
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 
-/// Top-level configuration stored in `config.toml`.
+/// `config.toml` に保存するトップレベル設定。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    /// Google Drive/Sheets ids used by the worker.
+    /// Workerが利用するGoogle Drive/SheetsのID群。
     pub google: GoogleCfg,
-    /// User profile values used when writing the sheet.
+    /// シート書き込み時に使うユーザー情報。
     pub user: UserCfg,
-    /// Template sheet cell positions.
+    /// テンプレートシート上のセル位置。
     pub template: TemplateCfg,
-    /// Column layout for the expense rows in the template.
+    /// 経費行の列レイアウト。
     pub general_expense: GeneralExpenseCfg,
 }
 
-/// Google API related identifiers.
+/// Google API関連のID群。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GoogleCfg {
-    /// Drive folder that holds input images.
+    /// 入力画像が置かれるDriveフォルダID。
     pub input_folder_id: String,
-    /// Drive folder to upload exported PDFs.
+    /// PDFをアップロードするDriveフォルダID。
     pub output_folder_id: String,
-    /// Template spreadsheet id or shortcut id.
+    /// テンプレートスプレッドシートID（ショートカット可）。
     pub template_sheet_id: String,
 }
 
-/// User metadata inserted into the template.
+/// テンプレートに挿入するユーザー情報。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserCfg {
-    /// Full name used in the template.
+    /// テンプレートに記載する氏名。
     pub full_name: String,
 }
 
-/// Cell addresses inside the template sheet.
+/// テンプレートシート内のセル位置。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplateCfg {
-    /// Cell containing the user's name.
+    /// 氏名を入れるセル。
     pub name_cell: String,
-    /// Cell containing the target month.
+    /// 対象月を入れるセル。
     pub target_month_cell: String,
 }
 
-/// Layout information for the expense rows.
+/// 経費行のレイアウト情報。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeneralExpenseCfg {
-    /// First row where expense items start.
+    /// 経費入力の開始行。
     pub start_row: u32,
-    /// Column containing the date.
+    /// 日付列。
     pub date_col: String,
-    /// Column containing the reason/description.
+    /// 用途（理由）列。
     pub reason_col: String,
-    /// Column containing the amount.
+    /// 金額列。
     pub amount_col: String,
-    /// Column containing the category.
+    /// 勘定科目列。
     pub category_col: String,
-    /// Column containing the note.
+    /// 備考列。
     pub note_col: String,
 }
 
 impl Config {
-    /// Load from disk or create defaults when missing.
+    /// ディスクから読み込み、無ければデフォルトを生成する。
     pub fn load_or_default(path: &Path) -> Result<Self> {
         if path.exists() {
+            // 既存ファイルを読み込んでTOMLとしてパースする。
             let s = fs::read_to_string(path)?;
             Ok(toml::from_str(&s)?)
         } else {
+            // デフォルト設定を生成し、ファイルとして保存する。
             let cfg = Self::default();
             cfg.save(path)?;
             Ok(cfg)
         }
     }
 
-    /// Persist the config as pretty TOML.
+    /// 設定を整形済みTOMLで保存する。
     pub fn save(&self, path: &Path) -> Result<()> {
+        // TOML文字列に変換する。
         let s = toml::to_string_pretty(self)?;
+        // 指定パスへ書き込む。
         fs::write(path, s)?;
         Ok(())
     }
 }
 
 impl Default for Config {
-    /// Defaults align with the template layout expected by the worker.
+    /// Workerが期待するテンプレートのレイアウトに合わせた既定値。
     fn default() -> Self {
         Self {
+            // Google API関連の既定値を設定する。
             google: GoogleCfg {
                 input_folder_id: "".into(),
                 output_folder_id: "".into(),
                 template_sheet_id: "".into(),
             },
+            // ユーザー情報の既定値を設定する。
             user: UserCfg {
                 full_name: "Your Name".into(),
             },
+            // テンプレート内のセル位置の既定値を設定する。
             template: TemplateCfg {
                 name_cell: "F3".into(),
                 target_month_cell: "B3".into(),
             },
+            // 経費行のレイアウト既定値を設定する。
             general_expense: GeneralExpenseCfg {
                 start_row: 7,
                 date_col: "B".into(),

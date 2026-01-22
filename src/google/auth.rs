@@ -1,4 +1,4 @@
-//! OAuth setup and scopes for Google APIs.
+//! Google API向けOAuth設定とスコープ管理。
 
 use anyhow::Result;
 use std::{future::Future, pin::Pin, result::Result as StdResult};
@@ -11,17 +11,19 @@ use yup_oauth2::{
 
 use super::token_store::FileTokenStorage;
 
-/// Authenticator type used across the app.
+/// アプリ全体で使うAuthenticator型。
 pub type InstalledAuth =
     Authenticator<<DefaultHyperClientBuilder as HyperClientBuilder>::Connector>;
 
 #[derive(Copy, Clone)]
-/// Opens the browser and delegates to the default flow handler.
+/// ブラウザ起動後、標準のフロー処理へ委譲するデリゲート。
 struct InstalledFlowBrowserDelegate;
 
-/// Launch the browser and fall back to the default installed flow prompt.
+/// ブラウザを起動し、標準のインストールフローへフォールバックする。
 async fn browser_user_url(url: &str, need_code: bool) -> StdResult<String, String> {
+    // 認証URLをブラウザで開く（失敗は無視）。
     let _ = webbrowser::open(url);
+    // 既定のフローでユーザー入力を促す。
     let def_delegate = DefaultInstalledFlowDelegate;
     def_delegate.present_user_url(url, need_code).await
 }
@@ -32,18 +34,22 @@ impl InstalledFlowDelegate for InstalledFlowBrowserDelegate {
         url: &'a str,
         need_code: bool,
     ) -> Pin<Box<dyn Future<Output = StdResult<String, String>> + Send + 'a>> {
+        // 非同期でブラウザ起動→コード取得を行う。
         Box::pin(browser_user_url(url, need_code))
     }
 }
 
-/// Build an installed-flow authenticator with file-backed token storage.
+/// ファイル保存型トークンストレージでAuthenticatorを構築する。
 pub async fn authenticator() -> Result<InstalledAuth> {
-    // OAuth client secret is embedded for the local app.
+    // OAuthクライアントシークレットを埋め込みで読み込む。
     const CREDS: &str = include_str!("../../assets/credentials.json");
+    // クライアント情報をパースする。
     let secret = yup_oauth2::parse_application_secret(CREDS.as_bytes())?;
 
+    // トークン保存先を準備する。
     let storage = FileTokenStorage::new("token.json");
 
+    // Installed Flow用のAuthenticatorを構築する。
     let auth = InstalledFlowAuthenticator::builder(secret, InstalledFlowReturnMethod::HTTPRedirect)
         .with_storage(Box::new(storage))
         .flow_delegate(Box::new(InstalledFlowBrowserDelegate))
@@ -53,7 +59,7 @@ pub async fn authenticator() -> Result<InstalledAuth> {
     Ok(auth)
 }
 
-/// OAuth scopes required for Drive and Sheets operations.
+/// Drive/Sheets操作に必要なOAuthスコープ。
 pub fn scopes() -> Vec<&'static str> {
     vec![
         "https://www.googleapis.com/auth/drive",
