@@ -18,54 +18,54 @@ pub struct Shortcuts {
 /// メイン画面のショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MainShortcuts {
-    pub quit: String,
-    pub settings: String,
-    pub refresh: String,
-    pub enter: String,
-    pub down: String,
-    pub up: String,
+    pub quit: Vec<String>,
+    pub settings: Vec<String>,
+    pub refresh: Vec<String>,
+    pub enter: Vec<String>,
+    pub down: Vec<String>,
+    pub up: Vec<String>,
 }
 
 /// 設定画面のショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SettingsShortcuts {
-    pub cancel: String,
-    pub save: String,
-    pub input_folder: String,
-    pub output_folder: String,
-    pub template: String,
-    pub name: String,
+    pub cancel: Vec<String>,
+    pub save: Vec<String>,
+    pub input_folder: Vec<String>,
+    pub output_folder: Vec<String>,
+    pub template: Vec<String>,
+    pub name: Vec<String>,
 }
 
 /// 編集画面のショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EditJobShortcuts {
-    pub cancel: String,
-    pub next_field: String,
-    pub commit: String,
-    pub target_month: String,
-    pub edit_field: String,
+    pub cancel: Vec<String>,
+    pub next_field: Vec<String>,
+    pub commit: Vec<String>,
+    pub target_month: Vec<String>,
+    pub edit_field: Vec<String>,
 }
 
 /// ウィザード画面のショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WizardShortcuts {
-    pub proceed: String,
-    pub skip: String,
+    pub proceed: Vec<String>,
+    pub skip: Vec<String>,
 }
 
 /// InputBoxのショートカット。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputBoxShortcuts {
-    pub confirm: String,
-    pub cancel: String,
-    pub backspace: String,
-    pub delete: String,
-    pub left: String,
-    pub right: String,
-    pub home: String,
-    pub end: String,
-    pub clear_line: String,
+    pub confirm: Vec<String>,
+    pub cancel: Vec<String>,
+    pub backspace: Vec<String>,
+    pub delete: Vec<String>,
+    pub left: Vec<String>,
+    pub right: Vec<String>,
+    pub home: Vec<String>,
+    pub end: Vec<String>,
+    pub clear_line: Vec<String>,
 }
 
 impl Shortcuts {
@@ -98,49 +98,54 @@ impl Default for Shortcuts {
     fn default() -> Self {
         Self {
             main: MainShortcuts {
-                quit: "q".into(),
-                settings: "t".into(),
-                refresh: "r".into(),
-                enter: "Enter".into(),
-                down: "Down".into(),
-                up: "Up".into(),
+                quit: vec!["q".into()],
+                settings: vec!["t".into()],
+                refresh: vec!["r".into()],
+                enter: vec!["Enter".into()],
+                down: vec!["Down".into(), "j".into()],
+                up: vec!["Up".into(), "k".into()],
             },
             settings: SettingsShortcuts {
-                cancel: "Esc".into(),
-                save: "Enter".into(),
-                input_folder: "i".into(),
-                output_folder: "o".into(),
-                template: "p".into(),
-                name: "n".into(),
+                cancel: vec!["Esc".into()],
+                save: vec!["Enter".into()],
+                input_folder: vec!["i".into()],
+                output_folder: vec!["o".into()],
+                template: vec!["p".into()],
+                name: vec!["n".into()],
             },
             edit_job: EditJobShortcuts {
-                cancel: "Esc".into(),
-                next_field: "Tab".into(),
-                commit: "Enter".into(),
-                target_month: "m".into(),
-                edit_field: "e".into(),
+                cancel: vec!["Esc".into()],
+                next_field: vec!["Tab".into()],
+                commit: vec!["Enter".into()],
+                target_month: vec!["m".into()],
+                edit_field: vec!["e".into()],
             },
             wizard: WizardShortcuts {
-                proceed: "Enter".into(),
-                skip: "Esc".into(),
+                proceed: vec!["Enter".into()],
+                skip: vec!["Esc".into()],
             },
             input_box: InputBoxShortcuts {
-                confirm: "Enter".into(),
-                cancel: "Esc".into(),
-                backspace: "Backspace".into(),
-                delete: "Delete".into(),
-                left: "Left".into(),
-                right: "Right".into(),
-                home: "Home".into(),
-                end: "End".into(),
-                clear_line: "Ctrl+u".into(),
+                confirm: vec!["Enter".into()],
+                cancel: vec!["Esc".into()],
+                backspace: vec!["Backspace".into()],
+                delete: vec!["Delete".into()],
+                left: vec!["Left".into(), "h".into()],
+                right: vec!["Right".into(), "l".into()],
+                home: vec!["Home".into()],
+                end: vec!["End".into()],
+                clear_line: vec!["Ctrl+u".into()],
             },
         }
     }
 }
 
-/// KeyEventがショートカット文字列と一致するか判定する。
-pub fn matches_shortcut(key: &KeyEvent, shortcut: &str) -> bool {
+/// KeyEventがいずれかのショートカット文字列と一致するか判定する。
+pub fn matches_shortcut(key: &KeyEvent, shortcuts: &[String]) -> bool {
+    shortcuts.iter().any(|s| matches_single_shortcut(key, s))
+}
+
+/// KeyEventが単一のショートカット文字列と一致するか判定する。
+fn matches_single_shortcut(key: &KeyEvent, shortcut: &str) -> bool {
     // ショートカット文字列を分解する（例: "Ctrl+u", "a", "Enter"）。
     let parts: Vec<&str> = shortcut.split('+').collect();
 
@@ -201,31 +206,45 @@ mod tests {
     fn test_matches_shortcut_simple_char() {
         // 単一文字の一致判定を検証する。
         let key = KeyEvent::new(KeyCode::Char('q'), KeyModifiers::empty());
-        assert!(matches_shortcut(&key, "q"));
-        assert!(!matches_shortcut(&key, "w"));
+        assert!(matches_shortcut(&key, &[String::from("q")]));
+        assert!(!matches_shortcut(&key, &[String::from("w")]));
     }
 
     #[test]
     fn test_matches_shortcut_special_key() {
         // 特殊キーの一致判定を検証する。
         let key = KeyEvent::new(KeyCode::Enter, KeyModifiers::empty());
-        assert!(matches_shortcut(&key, "Enter"));
-        assert!(!matches_shortcut(&key, "Esc"));
+        assert!(matches_shortcut(&key, &[String::from("Enter")]));
+        assert!(!matches_shortcut(&key, &[String::from("Esc")]));
     }
 
     #[test]
     fn test_matches_shortcut_with_modifier() {
         // 修飾キー付きの一致判定を検証する。
         let key = KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL);
-        assert!(matches_shortcut(&key, "Ctrl+u"));
-        assert!(!matches_shortcut(&key, "u"));
+        assert!(matches_shortcut(&key, &[String::from("Ctrl+u")]));
+        assert!(!matches_shortcut(&key, &[String::from("u")]));
     }
 
     #[test]
     fn test_matches_shortcut_arrow_keys() {
         // 矢印キーの一致判定を検証する。
         let key = KeyEvent::new(KeyCode::Up, KeyModifiers::empty());
-        assert!(matches_shortcut(&key, "Up"));
-        assert!(!matches_shortcut(&key, "Down"));
+        assert!(matches_shortcut(&key, &[String::from("Up")]));
+        assert!(!matches_shortcut(&key, &[String::from("Down")]));
+    }
+
+    #[test]
+    fn test_matches_shortcut_multiple_keys() {
+        // 複数キーバインドの一致判定を検証する。
+        let key_up = KeyEvent::new(KeyCode::Up, KeyModifiers::empty());
+        let key_k = KeyEvent::new(KeyCode::Char('k'), KeyModifiers::empty());
+        let shortcuts = vec![String::from("Up"), String::from("k")];
+
+        assert!(matches_shortcut(&key_up, &shortcuts));
+        assert!(matches_shortcut(&key_k, &shortcuts));
+
+        let key_j = KeyEvent::new(KeyCode::Char('j'), KeyModifiers::empty());
+        assert!(!matches_shortcut(&key_j, &shortcuts));
     }
 }

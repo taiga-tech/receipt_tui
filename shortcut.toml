@@ -1,46 +1,47 @@
 # Shortcut key configuration for receipt_tui
+# Each action can have multiple key bindings (array format)
 # Supported key formats: "a", "Enter", "Esc", "Tab", "Up", "Down", "Left", "Right",
 #                        "Home", "End", "Backspace", "Delete", "Ctrl+a", "Alt+a"
 
 [main]
 # Main screen shortcuts
-quit = "q"
-settings = "t"
-refresh = "r"
-enter = "Enter"
-down = "Down"
-up = "Up"
+quit = ["q", "Ctrl+c"]
+settings = ["t"]
+refresh = ["r"]
+enter = ["Enter"]
+down = ["Down", "j"]   # Arrow key and vim key
+up = ["Up", "k"]       # Arrow key and vim key
 
 [settings]
 # Settings screen shortcuts
-cancel = "Esc"
-save = "Enter"
-input_folder = "i"
-output_folder = "o"
-template = "p"
-name = "n"
+cancel = ["Esc"]
+save = ["Enter"]
+input_folder = ["i"]
+output_folder = ["o"]
+template = ["p"]
+name = ["n"]
 
 [edit_job]
 # Edit job screen shortcuts
-cancel = "Esc"
-next_field = "Tab"
-commit = "Enter"
-target_month = "m"
-edit_field = "e"
+cancel = ["Esc"]
+next_field = ["Tab"]
+commit = ["Enter"]
+target_month = ["m"]
+edit_field = ["e"]
 
 [wizard]
 # Initial setup wizard shortcuts
-proceed = "Enter"
-skip = "Esc"
+proceed = ["Enter"]
+skip = ["Esc"]
 
 [input_box]
 # InputBox shortcuts
-confirm = "Enter"
-cancel = "Esc"
-backspace = "Backspace"
-delete = "Delete"
-left = "Left"
-right = "Right"
-home = "Home"
-end = "End"
-clear_line = "Ctrl+u"
+confirm = ["Enter"]
+cancel = ["Esc"]
+backspace = ["Backspace"]
+delete = ["Delete"]
+left = ["Left", "h"]      # Arrow key and vim key
+right = ["Right", "l"]    # Arrow key and vim key
+home = ["Home"]
+end = ["End"]
+clear_line = ["Ctrl+u"]
