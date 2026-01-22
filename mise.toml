@@ -1,11 +1,112 @@
+# ========================================
+# Development Tasks
+# ========================================
+
+[tasks.run]
+description = "Start the TUI application in development mode"
+alias = "dev"
+
+[tasks.dev]
+description = "Start the TUI application"
+run = "cargo run"
+
+[tasks.watch]
+description = "Watch files and auto-restart on changes (requires cargo-watch)"
+run = "cargo watch -x run"
+
+# ========================================
+# Build Tasks
+# ========================================
+
+[tasks.build]
+description = "Build optimized release binary"
+run = "cargo build --release"
+
+[tasks.build-dev]
+description = "Build debug binary"
+run = "cargo build"
+
+[tasks.check]
+description = "Fast type-check without building"
+run = "cargo check --all-targets"
+
+# ========================================
+# Code Quality Tasks
+# ========================================
+
 [tasks.format]
+description = "Format code with rustfmt"
 run = "cargo fmt"
+alias = "fmt"
 
 [tasks.fmt-check]
+description = "Check code formatting without modifying files"
 run = "cargo fmt --check"
 
 [tasks.lint]
-run = "cargo clippy --all-targets --all-features -- -D warnings"
+description = "Run clippy linter and format check"
+run = [
+  "cargo clippy --all-targets --all-features -- -D warnings",
+  "mise fmt-check",
+]
 
-[tasks.dev]
-run = "cargo run"
+[tasks.fix]
+description = "Auto-fix clippy warnings where possible"
+run = "cargo clippy --all-targets --all-features --fix --allow-dirty"
+
+# ========================================
+# Testing Tasks
+# ========================================
+
+[tasks.test]
+description = "Run all tests"
+run = "cargo test"
+
+[tasks.test-verbose]
+description = "Run tests with output visible"
+run = "cargo test -- --nocapture"
+
+# ========================================
+# CI/CD Tasks
+# ========================================
+
+[tasks.ci]
+description = "Run full CI pipeline (format, lint, test, build)"
+run = [
+  "mise fmt-check",
+  "cargo clippy --all-targets --all-features -- -D warnings",
+  "cargo test",
+  "cargo build --release",
+]
+
+# ========================================
+# Documentation Tasks
+# ========================================
+
+[tasks.doc]
+description = "Generate and open project documentation"
+run = "cargo doc --no-deps --open"
+
+[tasks.doc-all]
+description = "Generate documentation including dependencies"
+run = "cargo doc --open"
+
+# ========================================
+# Maintenance Tasks
+# ========================================
+
+[tasks.clean]
+description = "Remove build artifacts"
+run = "cargo clean"
+
+[tasks.deps-update]
+description = "Update dependencies in Cargo.lock"
+run = "cargo update"
+
+[tasks.deps-outdated]
+description = "Check for outdated dependencies (requires cargo-outdated)"
+run = "cargo outdated"
+
+[tasks.tree]
+description = "Show dependency tree"
+run = "cargo tree"

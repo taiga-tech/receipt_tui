@@ -11,9 +11,37 @@ receipt_tuiは、Google Drive上の領収書画像を読み込み、Google Sheet
 
 ### Using mise (Recommended)
 ```bash
-mise run fmt          # Format code with rustfmt
-mise run fmt-check    # Check formatting (CI-friendly)
-mise run lint         # Run clippy with warnings as errors
+# Development
+mise run dev          # Start the TUI application
+mise run run          # Alias for 'dev'
+mise run watch        # Auto-restart on file changes (requires cargo-watch)
+mise run check        # Fast type-check without building
+
+# Building
+mise run build        # Build optimized release binary
+mise run build-dev    # Build debug binary
+
+# Code Quality
+mise run format       # Format code with rustfmt (alias: fmt)
+mise run fmt-check    # Check formatting without modifying files
+mise run lint         # Run clippy and format check
+mise run fix          # Auto-fix clippy warnings
+
+# Testing
+mise run test         # Run all tests
+mise run test-verbose # Run tests with output visible
+
+# CI/CD
+mise run ci           # Run full CI pipeline (format, lint, test, build)
+
+# Documentation
+mise run doc          # Generate and open project documentation
+mise run doc-all      # Generate docs including dependencies
+
+# Maintenance
+mise run clean        # Remove build artifacts
+mise run deps-update  # Update dependencies in Cargo.lock
+mise run tree         # Show dependency tree
 ```
 
 ### Using cargo directly
@@ -34,8 +62,12 @@ cargo test            # Run all tests (when tests are added)
 このアプリケーションは、UIスレッドとワーカースレッドが`tokio::mpsc`チャネルで通信する非同期アーキテクチャを採用しています。
 
 - **`main.rs`**: エントリーポイント。tokioランタイムを起動してアプリケーションを実行
-- **`app.rs`**: メインイベントループとTUI状態管理。`App`構造体がアプリケーション状態を保持し、キーボード入力を処理してワーカーにコマンドを送信
+- **`app/`**: メインイベントループとTUI状態管理
+  - **`mod.rs`**: `App`構造体の定義とメインループ（`run_app`関数）
+  - **`handlers.rs`**: キーボード入力のハンドラー関数群（画面ごとのキー処理）
+  - **`render.rs`**: 描画ロジック（`draw`関数で4ペインレイアウトを構築）
 - **`ui.rs`**: ターミナル初期化/復元のユーティリティ
+- **`shortcuts.rs`**: ショートカットキー設定の読み込みと解析。`shortcut.toml`からキーバインディングをロード
 - **`events.rs`**: UI状態定義（`Screen`列挙型、`UiState`構造体）
 - **`input.rs`**: TUI内での文字列入力コンポーネント（InputBox）。raw modeを維持したまま、ポップアップ形式で入力を受け付ける
 - **`layout.rs`**: レイアウト計算のヘルパー関数。4ペイン（Jobs Table + INFO Panel + HELP + STATUS）のレイアウトを管理
@@ -77,6 +109,7 @@ App updates (app.rs) → UI redraw (ratatui)
 7. **Settings buffer management**: Settings画面でESC時にバッファをリセットし、前回の編集値を破棄
 8. **4-pane layout**: Jobs Table (70%) + INFO Panel (30%) + HELP Bar + STATUS Bar の4ペイン構成
 9. **Auto-generated target month**: `edit_target_month`は起動時に現在の年月で自動生成（ハードコーディングなし）
+10. **Customizable shortcuts**: `shortcut.toml`でキーバインディングをカスタマイズ可能。`shortcuts.rs`が設定を読み込み、各ハンドラーで使用
 
 ### Google Sheets Integration Details
 
@@ -88,7 +121,8 @@ App updates (app.rs) → UI redraw (ratatui)
 
 ## Configuration
 
-`config.toml`（実行時に自動生成、gitignore済み）の構造:
+### config.toml
+アプリケーション設定ファイル（実行時に自動生成、gitignore済み）の構造:
 
 ```toml
 [google]
@@ -111,6 +145,9 @@ amount_col = "D"          # Column for amount
 category_col = "E"        # Column for category
 note_col = "F"            # Column for note
 ```
+
+### shortcut.toml
+キーバインディング設定ファイル（gitで管理、ユーザーがカスタマイズ可能）。各画面（main、settings、edit_job、wizard、input_box）ごとにキー操作を定義します。キーは`["Char(r)"]`、`["Char(q)"]`、`["Enter"]`などの形式で記載します。
 
 ## Testing
 
