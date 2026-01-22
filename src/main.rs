@@ -10,6 +10,7 @@ mod google;
 mod input;
 mod jobs;
 mod layout;
+mod shortcuts;
 mod ui;
 mod wizard;
 mod worker;
