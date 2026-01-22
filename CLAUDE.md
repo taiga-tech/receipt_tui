@@ -156,6 +156,33 @@ note_col = "F"            # Column for note
 - 統合テスト: `tests/`ディレクトリに配置（例: `tests/drive_smoke.rs`）
 - 実行: `cargo test`
 
+## CI/CD
+
+### GitHub Actions Workflows
+
+`.github/workflows/`ディレクトリに3つのワークフローを設定:
+
+1. **Test & Build** (`test.yml`)
+   - トリガー: main/developブランチへのpushとPR
+   - 実行内容: `mise run ci`（format check、clippy、test、release build）
+   - キャッシング: Rust依存関係を自動キャッシュ
+   - アーティファクト: ビルド成果物をアップロード
+
+2. **Release** (`release.yml`)
+   - トリガー: `v*.*.*`形式のタグpush
+   - 実行内容: 複数プラットフォーム（Linux、macOS x64/ARM、Windows）でのリリースビルド
+   - 成果物: GitHub Releaseに各プラットフォームのバイナリを自動アップロード
+
+3. **Security Audit** (`security.yml`)
+   - トリガー: Cargo.toml/Cargo.lockの変更、毎週月曜日9:00 UTC
+   - 実行内容: cargo-auditで依存関係の脆弱性チェック、cargo-denyでライセンスチェック
+
+### ローカルでCIを再現
+
+```bash
+mise run ci  # GitHub ActionsのCIパイプラインと同じチェックを実行
+```
+
 ## Important Notes
 
 - `credentials.json`、`token.json`、`config.toml`はローカルのみに保持（`.gitignore`に含まれている）

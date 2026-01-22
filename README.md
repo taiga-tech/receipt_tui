@@ -1,5 +1,8 @@
 # receipt_tui
 
+[![Test](https://github.com/taiga-tech/receipt_tui/actions/workflows/test.yml/badge.svg)](https://github.com/taiga-tech/receipt_tui/actions/workflows/test.yml)
+[![Security Audit](https://github.com/taiga-tech/receipt_tui/actions/workflows/security.yml/badge.svg)](https://github.com/taiga-tech/receipt_tui/actions/workflows/security.yml)
+
 Google Drive上のレシート画像を一覧し、TUIで内容を入力してGoogleスプレッドシートに書き込み、PDFとしてDriveへアップロードするためのツールです。
 
 ## 特徴
