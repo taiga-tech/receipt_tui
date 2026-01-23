@@ -2,10 +2,6 @@
 # Development Tasks
 # ========================================
 
-[tasks.run]
-description = "Start the TUI application in development mode"
-alias = "dev"
-
 [tasks.dev]
 description = "Start the TUI application"
 run = "cargo run"
@@ -72,12 +68,7 @@ run = "cargo test -- --nocapture"
 
 [tasks.ci]
 description = "Run full CI pipeline (format, lint, test, build)"
-run = [
-  "mise fmt-check",
-  "cargo clippy --all-targets --all-features -- -D warnings",
-  "cargo test",
-  "cargo build --release",
-]
+run = ["mise lint", "mise test", "mise build"]
 
 # ========================================
 # Documentation Tasks
