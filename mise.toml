@@ -4,7 +4,7 @@
 
 [tasks.dev]
 description = "Start the TUI application"
-run = "cargo run"
+run = "cargo run --release --bin receipt_tui"
 
 [tasks.watch]
 description = "Watch files and auto-restart on changes (requires cargo-watch)"
