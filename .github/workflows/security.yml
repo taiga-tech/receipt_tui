@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Rust setup
         uses: ./.github/actions/rust-setup
         with:
@@ -37,6 +40,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Rust setup
         uses: ./.github/actions/rust-setup
         with:

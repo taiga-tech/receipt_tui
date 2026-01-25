@@ -5,10 +5,6 @@ inputs:
     description: "Rust toolchain to install"
     default: "stable"
     required: false
-  fetch-depth:
-    description: "Fetch depth for actions/checkout"
-    default: "1"
-    required: false
   components:
     description: "Rust components to install (comma-separated)"
     required: false
@@ -25,11 +21,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: ${{ inputs.fetch-depth }}
-
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
