@@ -1,0 +1,23 @@
+name: "Create dummy OAuth credentials"
+description: "Create a placeholder assets/credentials.json for CI"
+runs:
+  using: "composite"
+  steps:
+    - name: Create dummy OAuth credentials
+      shell: bash
+      run: |
+        mkdir -p assets
+        cat > assets/credentials.json <<'EOF'
+        {
+          "installed": {
+            "client_id": "dummy-client-id",
+            "project_id": "dummy-project",
+            "auth_uri": "https://example.com/auth",
+            "token_uri": "https://example.com/token",
+            "client_secret": "dummy-client-secret",
+            "redirect_uris": [
+              "http://localhost"
+            ]
+          }
+        }
+        EOF

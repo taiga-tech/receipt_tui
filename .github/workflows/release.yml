@@ -34,19 +34,11 @@ jobs:
             asset_name: receipt_tui-windows-amd64.exe
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Rust setup
+        uses: ./.github/actions/rust-setup
         with:
           targets: ${{ matrix.target }}
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.target }}
-          cache-on-failure: true
+          cache-key: ${{ matrix.target }}
 
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}

@@ -16,39 +16,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Rust setup
+        uses: ./.github/actions/rust-setup
+        with:
+          components: rustfmt, clippy
 
       - name: Install mise
         uses: jdx/mise-action@v2
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          cache-on-failure: true
-
       - name: Create dummy OAuth credentials for CI
-        run: |
-          mkdir -p assets
-          cat > assets/credentials.json <<'EOF'
-          {
-            "installed": {
-              "client_id": "dummy-client-id",
-              "project_id": "dummy-project",
-              "auth_uri": "https://example.com/auth",
-              "token_uri": "https://example.com/token",
-              "client_secret": "dummy-client-secret",
-              "redirect_uris": [
-                "http://localhost"
-              ]
-            }
-          }
-          EOF
+        uses: ./.github/actions/create-dummy-credentials
 
       - name: Run mise ci
         run: mise run ci

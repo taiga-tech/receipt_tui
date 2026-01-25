@@ -1,0 +1,45 @@
+name: "Rust setup"
+description: "Checkout repository, install Rust toolchain, and optionally enable rust-cache"
+inputs:
+  toolchain:
+    description: "Rust toolchain to install"
+    default: "stable"
+    required: false
+  fetch-depth:
+    description: "Fetch depth for actions/checkout"
+    default: "1"
+    required: false
+  components:
+    description: "Rust components to install (comma-separated)"
+    required: false
+  targets:
+    description: "Rust targets to install (comma-separated)"
+    required: false
+  cache:
+    description: "Enable Swatinem/rust-cache"
+    default: "true"
+    required: false
+  cache-key:
+    description: "Optional cache key for rust-cache"
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: ${{ inputs.components }}
+        targets: ${{ inputs.targets }}
+
+    - name: Cache Rust dependencies
+      if: ${{ inputs.cache == 'true' }}
+      uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ inputs.cache-key }}
+        cache-on-failure: true
