@@ -7,6 +7,7 @@
   - `app.rs` (TUI flow), `ui.rs` (terminal setup), `worker.rs` (Google API jobs)
   - `google/` (OAuth, Drive, Sheets client helpers)
   - `config.rs` (config load/save), `jobs.rs` (job model)
+- `skills/` は本リポジトリ専用のCodexスキル置き場。配布用アーカイブは `skills/dist/` に置く。
 - `config.toml` is generated at runtime and stores user and Google IDs.
 - No test directory yet; add tests under `tests/` for integration or `src/*` unit tests.
 

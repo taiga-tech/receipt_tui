@@ -62,3 +62,7 @@ Google Drive上のレシート画像を一覧し、TUIで内容を入力してGo
 
 ## 注意
 - `credentials.json` / `token.json` / `config.toml` はローカル専用です（`.gitignore`済み）。
+
+## Skills
+- 本リポジトリ専用のCodexスキルは `skills/` に配置します。
+- 配布用の `.skill` 生成物は `skills/dist/` に置き、Git管理から除外します。

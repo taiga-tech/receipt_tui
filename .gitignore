@@ -4,3 +4,4 @@ credentials.json
 token.json
 assets/credentials.json
 *.log
+skills/dist/

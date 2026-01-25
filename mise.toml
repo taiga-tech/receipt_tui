@@ -83,6 +83,14 @@ description = "Generate documentation including dependencies"
 run = "cargo doc --open"
 
 # ========================================
+# Demo Tasks
+# ========================================
+
+[tasks.demo]
+description = "Generate demo GIF with vhs"
+run = "vhs assets/demo.tape"
+
+# ========================================
 # Maintenance Tasks
 # ========================================
 
